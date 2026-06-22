@@ -50,6 +50,17 @@ section[data-testid="stSidebar"] {
     background-color: #00ccaa;
 }
 
+big-title {
+    font-size: 40px;
+    font-weight: 800;
+    color: #00ffcc;
+}
+
+.sub-title {
+    font-size: 16px;
+    color: #a0a0a0;
+}           
+
 </style>
 """, unsafe_allow_html=True)
 def root_cause_analysis(latency, jitter, packet_loss, bandwidth):
@@ -77,23 +88,7 @@ def root_cause_analysis(latency, jitter, packet_loss, bandwidth):
         actions.append("✅ No action needed")
 
     return causes, actions
-def ai_copilot_response(user_input, latency, jitter, packet_loss, bandwidth):
 
-    user_input = user_input.lower()
-
-    if "slow" in user_input or "latency" in user_input:
-        return "🔴 High latency detected" if latency > 70 else "🟢 Latency normal"
-
-    if "packet" in user_input:
-        return "🟠 Packet loss detected" if packet_loss > 5 else "🟢 No packet loss"
-
-    if "bandwidth" in user_input:
-        return "🟡 Low bandwidth" if bandwidth < 50 else "🟢 Bandwidth OK"
-
-    if "fix" in user_input:
-        return "💡 Restart interface + check routing"
-
-    return "🤖 Ask about latency, packet loss, bandwidth"
 
 st.markdown('<div class="big-title">🧠 AI NOC Copilot</div>', unsafe_allow_html=True)
 
@@ -103,40 +98,6 @@ st.markdown("---")
 
 st.markdown("## 🎛️ Network Control Center")
 
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    latency = st.slider("Latency (ms)", 0, 200, 50)
-
-with col2:
-    jitter = st.slider("Jitter (ms)", 0, 100, 10)
-
-with col3:
-    packet_loss = st.slider("Packet Loss (%)", 0, 50, 2)
-
-with col4:
-    bandwidth = st.slider("Bandwidth (Mbps)", 0, 1000, 60)
-
-
-
-st.markdown("""
-<style>
-body {
-    background-color: #0E1117;
-}
-
-.big-title {
-    font-size: 40px;
-    font-weight: 800;
-    color: #00ffcc;
-}
-
-.sub-title {
-    font-size: 16px;
-    color: #a0a0a0;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # ================= LOAD MODEL =================
 model = joblib.load("network_model.pkl")
@@ -144,6 +105,7 @@ model = joblib.load("network_model.pkl")
 # ================= SESSION STATE (FOR GRAPHS) =================
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+
 if "latency_history" not in st.session_state:
     st.session_state.latency_history = deque(maxlen=20)
 
@@ -230,6 +192,11 @@ else:
     packet_loss = data["packet_loss"]
     bandwidth = data["bandwidth"]
 
+    st.write("Latency =", latency)
+    st.write("Jitter =", jitter)
+    st.write("Packet Loss =", packet_loss)
+    st.write("Bandwidth =", bandwidth)
+
     # ================= RISK ENGINE =================
     risk_score, risk_level = calculate_risk(
         latency,
@@ -258,18 +225,25 @@ else:
     # ================= ALERT PANEL =================
     st.markdown("## 🚨 Live Alerts")
 
-    alert1, alert2, alert3 = st.columns(3)
+    col1, col2, col3 = st.columns(3)
 
-    with alert1:
-        st.error("🔴 High Latency") if latency > 80 else st.success("🟢 Latency Stable")
+    with col1:
+        if latency > 80:
+            st.error("🔴 High Latency")
+        else:
+            st.success("🟢 Latency Stable")
 
-    with alert2:
-        st.warning("🟠 Packet Loss Warning") if packet_loss > 5 else st.success("🟢 Packet Loss Normal")
+    with col2:
+        if packet_loss > 5:
+            st.warning("🟠 Packet Loss Warning")
+        else:
+            st.success("🟢 Packet Loss Normal")
 
-    with alert3:
-        st.info("ℹ️ Bandwidth Normal") if bandwidth < 300 else st.success("🟢 High Bandwidth")
-
-    st.markdown("---")
+    with col3:
+        if bandwidth < 300:
+            st.info("ℹ️ Bandwidth Normal")
+        else:
+            st.success("🟢 High Bandwidth")
 
     # ================= STATUS =================
     if risk_level == "HIGH":
@@ -283,6 +257,8 @@ else:
 
     # ================= GRAPHS =================
     st.markdown("## 📊 Live Network Trends")
+
+    st.error(f"Latency History = {list(st.session_state.latency_history)}")
 
     colg1, colg2 = st.columns(2)
 
@@ -329,16 +305,27 @@ else:
 
     st.markdown("---")
 
-    # ================= CHATBOT =================
+# ================= AI COPILOT CHAT =================
     st.markdown("## 🤖 AI Copilot Chat")
 
-    user_msg = st.text_input("Ask AI about network:")
+    user_msg = st.text_input(
+        "Ask AI about network:",
+        key="copilot_chat_input"
+    )
 
-    if user_msg:
-        reply = ai_copilot_response(
-            user_msg, latency, jitter, packet_loss, bandwidth
-        )
-        st.info(reply)
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    reply = chatbot_response(user_msg,   latency,    jitter,packet_loss,bandwidth,risk_level)
+    st.session_state.chat_history.append(("🧑 You", user_msg))
+    st.session_state.chat_history.append(("🤖 Copilot", reply))
+
+# DISPLAY CHAT HISTORY (ONLY ONCE)
+    for role, msg in st.session_state.chat_history:
+        if role == "🧑 You":
+            st.markdown(f"**🧑 You:** {msg}")
+        else:
+            st.markdown(f"**🤖 Copilot:** {msg}")
     # ================= INCIDENT TICKET =================
 
     if st.button("🎫 Generate Incident Ticket"):
@@ -417,40 +404,4 @@ else:
     5. Continue real-time monitoring
     """
 
-        st.text_area("📄 AI Generated Report", report, height=300)
-    # ================= LIVE GRAPHS =================
-    st.subheader("📊 Live Network Trends")
-
-    st.line_chart({
-        "Latency": list(st.session_state.latency_history),
-        "Packet Loss": list(st.session_state.packet_history),
-        "Risk Score": list(st.session_state.risk_history)
-    })
-
-    st.markdown("## 🤖 AI Copilot Chat")
-
-    user_msg = st.text_input("Ask AI about network:")
-
-    # ================= AI COPILOT CHAT =================
-    st.markdown("## 🤖 AI Copilot Chat")
-
-    user_msg = st.text_input("Ask AI about network:")
-
-    if user_msg:
-        reply = ai_copilot_response(
-            user_msg,
-            latency,
-            jitter,
-            packet_loss,
-            bandwidth
-        )
-
-        st.session_state.chat_history.append(("🧑 You", user_msg))
-        st.session_state.chat_history.append(("🤖 Copilot", reply))
-
-# ================= CHAT HISTORY DISPLAY =================
-    for role, msg in st.session_state.chat_history:
-        if role == "🧑 You":
-            st.markdown(f"**🧑 You:** {msg}")
-        else:
-            st.markdown(f"**🤖 Copilot:** {msg}")
+        st.text_area("📄 AI Generated Report", report, height=300)    
