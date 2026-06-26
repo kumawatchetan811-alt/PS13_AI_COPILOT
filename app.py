@@ -15,54 +15,126 @@ st.set_page_config(
 st.markdown("""
 <style>
 
-/* MAIN BACKGROUND */
-body {
+/* ================= MAIN APP ================= */
+
+.stApp {
     background-color: #0E1117;
 }
 
-/* SECTION HEADINGS */
-h1, h2, h3 {
-    color: #00ffcc;
-}
+/* ================= NAVBAR ================= */
 
-/* METRIC CARDS STYLE */
-[data-testid="stMetric"] {
-    background-color: rgba(255, 255, 255, 0.05);
+.navbar {
+    background: linear-gradient(90deg, #111827, #1F2937);
+    padding: 15px;
     border-radius: 12px;
-    padding: 10px;
-    box-shadow: 0px 0px 10px rgba(0,255,204,0.1);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-around;
+    box-shadow: 0px 0px 15px rgba(0,255,204,0.15);
 }
 
-/* SIDEBAR */
-section[data-testid="stSidebar"] {
-    background-color: #111827;
-}
-
-/* BUTTON STYLE */
-.stButton>button {
-    background-color: #00ffcc;
-    color: black;
-    border-radius: 8px;
+.nav-item {
+    color: #00ffcc;
+    font-size: 18px;
     font-weight: bold;
 }
 
-.stButton>button:hover {
-    background-color: #00ccaa;
-}
+/* ================= TITLES ================= */
 
-big-title {
-    font-size: 40px;
+.big-title {
+    font-size: 42px;
     font-weight: 800;
     color: #00ffcc;
+    text-align: center;
 }
 
 .sub-title {
     font-size: 16px;
-    color: #a0a0a0;
-}           
+    color: #b0b0b0;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* ================= HEADINGS ================= */
+
+h1, h2, h3 {
+    color: #00ffcc !important;
+}
+
+/* ================= METRIC CARDS ================= */
+
+[data-testid="stMetric"] {
+    background-color: rgba(255,255,255,0.05);
+    border-radius: 15px;
+    padding: 15px;
+    border: 1px solid rgba(0,255,204,0.15);
+    box-shadow: 0px 0px 15px rgba(0,255,204,0.08);
+}
+
+/* ================= SIDEBAR ================= */
+
+section[data-testid="stSidebar"] {
+    background-color: #111827;
+}
+
+/* ================= BUTTONS ================= */
+
+.stButton > button {
+    width: 100%;
+    background-color: #00ffcc;
+    color: black;
+    border-radius: 10px;
+    font-weight: bold;
+    border: none;
+}
+
+.stButton > button:hover {
+    background-color: #00ccaa;
+}
+
+/* ================= RADIO BUTTONS ================= */
+
+div[role="radiogroup"] label {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+}
+
+/* ================= CHAT BOX ================= */
+
+.stTextInput input {
+    border-radius: 10px;
+}
+
+/* ================= GRAPHS ================= */
+
+[data-testid="stVerticalBlock"] canvas {
+    border-radius: 10px;
+}
+
+/* ================= SCROLLBAR ================= */
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #00ffcc;
+    border-radius: 10px;
+}
 
 </style>
 """, unsafe_allow_html=True)
+
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "🏠 Dashboard",
+    "📡 Live Monitor",
+    "📊 Analytics",
+    "🤖 AI Copilot",
+    "🎫 Incident Center",
+    "🌐 Topology"
+])
+
+
 def root_cause_analysis(latency, jitter, packet_loss, bandwidth):
     causes = []
     actions = []
@@ -115,9 +187,55 @@ if "packet_history" not in st.session_state:
 if "risk_history" not in st.session_state:
     st.session_state.risk_history = deque(maxlen=20)
 # ================= TITLE =================
-st.title("🧠 AI NOC Copilot v3 (ML + Live AI + Graph Intelligence)")
-st.sidebar.title("🚨 Live Alerts")
-mode = st.radio("Select Mode:", ["🔬 ML Prediction Mode", "📡 Live Simulation Mode"])
+
+
+# ================= HEADER =================
+
+st.markdown("""
+<h1 class="big-title">
+📡 Live Network Intelligence Dashboard
+</h1>
+
+<p class="sub-title">
+AI Powered Network Monitoring • Root Cause Analysis • Incident Prediction
+</p>
+""", unsafe_allow_html=True)
+
+# ================= SIDEBAR =================
+
+st.sidebar.image("https://img.icons8.com/color/96/network.png", width=80)
+
+st.sidebar.title("AI NOC Copilot")
+
+st.sidebar.success("🟢 System Online")
+
+st.sidebar.markdown("---")
+
+st.sidebar.write("### Project")
+
+st.sidebar.write("✔ Live Monitoring")
+
+st.sidebar.write("✔ ML Prediction")
+
+st.sidebar.write("✔ AI Copilot")
+
+st.sidebar.write("✔ Incident Center")
+
+st.sidebar.write("✔ Root Cause Engine")
+
+# ================= MODE SELECTION =================
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("📡 LIVE MONITORING MODE", use_container_width=True):
+        st.session_state.mode = "LIVE"
+
+with col2:
+    if st.button("🔬 ML PREDICTION MODE", use_container_width=True):
+        st.session_state.mode = "ML"
+
+mode = st.session_state.get("mode", "LIVE")
 
 # =========================================================
 # 🔬 MODE 1: ML PREDICTION
@@ -210,130 +328,138 @@ else:
     st.session_state.packet_history.append(packet_loss)
     st.session_state.risk_history.append(risk_score)
 
-    # ================= TOP METRICS =================
-    st.markdown("## 🧠 Network Health Overview")
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    col1.metric("📡 Latency", f"{latency} ms")
-    col2.metric("📦 Packet Loss", f"{packet_loss} %")
-    col3.metric("⚡ Bandwidth", f"{bandwidth} Mbps")
-    col4.metric("🔥 Risk Score", f"{round(risk_score, 2)}")
-
-    st.markdown("---")
+    with tab2:
 
     # ================= ALERT PANEL =================
-    st.markdown("## 🚨 Live Alerts")
 
-    col1, col2, col3 = st.columns(3)
+        st.markdown("## 🚨 Live Alerts")
 
-    with col1:
-        if latency > 80:
-            st.error("🔴 High Latency")
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            if latency > 80:
+                st.error("🔴 High Latency")
+            else:
+                st.success("🟢 Latency Stable")
+
+        with col2:
+            if packet_loss > 5:
+                st.warning("🟠 Packet Loss Warning")
+            else:
+                st.success("🟢 Packet Loss Normal")
+
+        with col3:
+            if bandwidth < 300:
+                st.info("ℹ️ Bandwidth Normal")
+            else:
+                st.success("🟢 High Bandwidth")
+
+        if risk_level == "HIGH":
+            st.error("🔴 NETWORK STATUS: CRITICAL")
+        elif risk_level == "MEDIUM":
+            st.warning("🟠 NETWORK STATUS: DEGRADED")
         else:
-            st.success("🟢 Latency Stable")
-
-    with col2:
-        if packet_loss > 5:
-            st.warning("🟠 Packet Loss Warning")
-        else:
-            st.success("🟢 Packet Loss Normal")
-
-    with col3:
-        if bandwidth < 300:
-            st.info("ℹ️ Bandwidth Normal")
-        else:
-            st.success("🟢 High Bandwidth")
-
-    # ================= STATUS =================
-    if risk_level == "HIGH":
-        st.error("🔴 NETWORK STATUS: CRITICAL")
-    elif risk_level == "MEDIUM":
-        st.warning("🟠 NETWORK STATUS: DEGRADED")
-    else:
-        st.success("🟢 NETWORK STATUS: HEALTHY")
+            st.success("🟢 NETWORK STATUS: HEALTHY")
 
     st.markdown("---")
 
     # ================= GRAPHS =================
-    st.markdown("## 📊 Live Network Trends")
+    with tab3:
 
-    st.error(f"Latency History = {list(st.session_state.latency_history)}")
+        st.markdown("## 📊 Live Network Trends")
 
-    colg1, colg2 = st.columns(2)
+        colg1, colg2 = st.columns(2)
 
-    with colg1:
-        st.line_chart({
-            "Latency": list(st.session_state.latency_history),
-            "Packet Loss": list(st.session_state.packet_history)
-        })
+        with colg1:
+            st.line_chart({
+                "Latency": list(st.session_state.latency_history),
+                "Packet Loss": list(st.session_state.packet_history)
+            })
 
-    with colg2:
-        st.line_chart({
-            "Risk Score": list(st.session_state.risk_history)
-        })
+        with colg2:
+            st.line_chart({
+                "Risk Score": list(st.session_state.risk_history)
+            })
 
-    st.markdown("---")
+        st.markdown("---")
 
     # ================= TOPOLOGY =================
-    st.markdown("## 🌐 Network Topology")
+    with tab6:
 
-    if risk_level == "HIGH":
-        st.markdown("""
-🔴 Router A ───── 🔴 Router B ───── 🔴 Server
+        st.markdown("## 🌐 Network Topology")
 
-        ╲
-         ╲
-          🔴 Backup Link (ACTIVE FAILOVER)
-        """)
-    elif risk_level == "MEDIUM":
-        st.markdown("""
-🟠 Router A ───── 🟠 Router B ───── 🟠 Server
+        if risk_level == "HIGH":
+            st.markdown("""
+    🔴 Router A ───── 🔴 Router B ───── 🔴 Server
+   
+            ╲
+             ╲
+              🔴 Backup Link (ACTIVE FAILOVER)
+            """)
 
-        ╲
-         ╲
-          🟠 Backup Link (STANDBY)
-        """)
-    else:
-        st.markdown("""
-🟢 Router A ───── 🟢 Router B ───── 🟢 Server
+        elif risk_level == "MEDIUM":
+            st.markdown("""
+    🟠 Router A ───── 🟠 Router B ───── 🟠 Server
+ 
+            ╲
+             ╲
+              🟠 Backup Link (STANDBY)
+            """)
 
-        ╲
-         ╲
-          🟢 Backup Link (OPTIMAL)
-        """)
+        else:
+            st.markdown("""
+    🟢 Router A ───── 🟢 Router B ───── 🟢 Server
+  
+            ╲
+             ╲
+              🟢 Backup Link (OPTIMAL)
+            """)
 
-    st.markdown("---")
+        st.markdown("---")
 
 # ================= AI COPILOT CHAT =================
-    st.markdown("## 🤖 AI Copilot Chat")
+    with tab4:
 
-    user_msg = st.text_input(
-        "Ask AI about network:",
-        key="copilot_chat_input"
-    )
+        st.markdown("## 🤖 AI Copilot Chat")
 
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
+        user_msg = st.text_input(
+            "Ask AI about network:",
+            key="copilot_chat_input"
+        )
 
-    reply = chatbot_response(user_msg,   latency,    jitter,packet_loss,bandwidth,risk_level)
-    st.session_state.chat_history.append(("🧑 You", user_msg))
-    st.session_state.chat_history.append(("🤖 Copilot", reply))
+        if "chat_history" not in st.session_state:
+            st.session_state.chat_history = []
 
-# DISPLAY CHAT HISTORY (ONLY ONCE)
-    for role, msg in st.session_state.chat_history:
-        if role == "🧑 You":
-            st.markdown(f"**🧑 You:** {msg}")
-        else:
-            st.markdown(f"**🤖 Copilot:** {msg}")
+        if user_msg:
+
+            reply = chatbot_response(
+                user_msg,
+                latency,
+                jitter,
+                packet_loss,
+                bandwidth,
+                risk_level
+            )
+
+            st.session_state.chat_history.append(("🧑 You", user_msg))
+            st.session_state.chat_history.append(("🤖 Copilot", reply))
+
+        for role, msg in st.session_state.chat_history:
+            if role == "🧑 You":
+                st.markdown(f"**🧑 You:** {msg}")
+            else:
+                st.markdown(f"**🤖 Copilot:** {msg}")
     # ================= INCIDENT TICKET =================
 
-    if st.button("🎫 Generate Incident Ticket"):
+    with tab5:
 
-        st.code(f"""
+        st.markdown("## 🎫 Incident Center")
+
+        if st.button("🎫 Generate Incident Ticket"):
+
+            st.code(f"""
     Incident ID : INC-001
 
-                
     Issue : Network Instability
 
     Severity : {risk_level}
@@ -349,26 +475,24 @@ else:
     - Monitor Traffic
     - Inspect Interfaces
     """)
-        # ================= DEMO FAILURE SCENARIO =================
 
-    if st.button("🎬 Demo Failure Scenario"):
+        if st.button("🎬 Demo Failure Scenario"):
 
-        st.error("🚨 Simulated Critical Network Failure")
+            st.error("🚨 Simulated Critical Network Failure")
 
-        st.metric("Latency", 120)
-        st.metric("Packet Loss", 15)
-        st.metric("Bandwidth", 20)
+            st.metric("Latency", 120)
+            st.metric("Packet Loss", 15)
+            st.metric("Bandwidth", 20)
 
-        st.error("Risk Level : HIGH")
+            st.error("Risk Level : HIGH")
 
-        st.write("🔴 High Latency")
-        st.write("🔴 Packet Loss Spike")
-        st.write("🔴 Network Instability")
-    # ================= AI EXECUTIVE SUMMARY =================
+            st.write("🔴 High Latency")
+            st.write("🔴 Packet Loss Spike")
+            st.write("🔴 Network Instability")
 
-    if st.button("🤖 Generate AI Report"):
+        if st.button("🤖 Generate AI Report"):
 
-        report = f"""
+            report = f"""
     # Network Health Summary
 
     Current Status : {risk_level}
@@ -384,24 +508,24 @@ else:
     Primary Issues:
     """
 
-        if latency > 80:
-            report += "\n• High Latency"
+            if latency > 80:
+                report += "\n• High Latency"
 
-        if packet_loss > 5:
-            report += "\n• Packet Loss Spike"
+            if packet_loss > 5:
+                report += "\n• Packet Loss Spike"
 
-        if bandwidth < 100:
-            report += "\n• Low Available Bandwidth"
+            if bandwidth < 100:
+                report += "\n• Low Available Bandwidth"
 
-        report += """
+            report += """
 
     Recommended Actions:
 
     1. Check routing path
     2. Monitor packet drops
     3. Verify network interfaces
-    4. Increase available bandwidth if needed
+    4. Increase available bandwidth
     5. Continue real-time monitoring
     """
 
-        st.text_area("📄 AI Generated Report", report, height=300)    
+            st.text_area("📄 AI Generated Report", report, height=300)
